@@ -1,0 +1,79 @@
+name: Release
+
+on:
+  push:
+    tags:
+    - '[0-9]+.[0-9]+.[0-9]+'
+    - '[0-9]+.[0-9]+.[0-9]+-[a-zA-Z]+.[0-9]+'
+
+jobs:
+  build:
+    name: Release
+    runs-on: ubuntu-latest
+    env:
+      APPLICATION_NAME: evbindkeys
+    steps:
+      - name: Install libevdev
+        run: sudo apt-get install libevdev-dev
+      - name: Set release version
+        run: echo "RELEASE_VERSION=${GITHUB_REF:10}" >> $GITHUB_ENV
+      - name: Checkout source
+        uses: actions/checkout@v2
+      - name: Install rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: Build source
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release
+      - name: Test source
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+      - name: Login to crate.io
+        uses: actions-rs/cargo@v1
+        with:
+          command: login
+          args: ${{ secrets.CRATES_IO_TOKEN }}
+      - name: Publish to crate.io
+        uses: actions-rs/cargo@v1
+        with:
+          command: publish
+      - name: Create package
+        run: |
+          tar -czvf ${{ env.APPLICATION_NAME }}-${{ env.RELEASE_VERSION }}.tar.gz -C target/release ${{ env.APPLICATION_NAME }}
+      - name: Create package checksum
+        run: |
+          sha256sum ${{ env.APPLICATION_NAME }}-${{ env.RELEASE_VERSION }}.tar.gz > ${{ env.APPLICATION_NAME }}-${{ env.RELEASE_VERSION }}.tar.gz.sha256sum
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+      - name: Upload Release Asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ env.APPLICATION_NAME }}-${{ env.RELEASE_VERSION }}.tar.gz
+          asset_name: ${{ env.APPLICATION_NAME }}-${{ env.RELEASE_VERSION }}.tar.gz
+          asset_content_type: application/octet-stream
+      - name: Upload Release Asset Checksum
+        id: upload-release-asset-checksum
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ env.APPLICATION_NAME }}-${{ env.RELEASE_VERSION }}.tar.gz.sha256sum
+          asset_name: ${{ env.APPLICATION_NAME }}-${{ env.RELEASE_VERSION }}.tar.gz.sha256sum
+          asset_content_type: text/plain

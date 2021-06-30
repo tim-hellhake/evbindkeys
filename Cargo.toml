@@ -1,0 +1,16 @@
+[package]
+name = "evbindkeys"
+version = "0.1.0"
+authors = ["Tim Hellhake"]
+edition = "2018"
+description = "Like XBindKeys but without the X and per device"
+readme = "README.md"
+repository = "https://github.com/tim-hellhake/evbindkeys"
+license = "MPL-2.0"
+keywords = ["bind", "key", "evdev"]
+
+[dependencies]
+serde = { version = "1.0.126", features = ["derive"] }
+toml = "0.5.8"
+evdev-rs = "0.5.0"
+subprocess = "0.2.7"

@@ -1,0 +1,11 @@
+[[devices]]
+file = "/dev/input/by-id/example-event-kbd"
+exclusive = true
+
+[[devices.bindings]]
+key = "KEY_3"
+on_key_down = "pamixer -i 10"
+
+[[devices.bindings]]
+key = "KEY_6"
+on_key_down = "pamixer -d 10"
